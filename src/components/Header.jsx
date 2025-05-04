@@ -187,12 +187,12 @@ function Header() {
           </div>
 
           {/* Details */}
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <p className="text-sm text-gray-500">User Type</p>
             <p className="text-md font-medium text-gray-800">
               {isAdmin ? "Admin" : "User"}
             </p>
-          </div>
+          </div> */}
 
           <Link to="/settings" onClick={() => setIsAccountPanelOpen(false)} className="flex items-center justify-between px-4 py-2 border rounded-md text-blue-600 hover:bg-blue-50">
             <span>Settings</span> <FiChevronRight />

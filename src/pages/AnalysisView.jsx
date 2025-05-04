@@ -1,5 +1,4 @@
-// File: src/pages/AnalysisView.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../contexts/AuthContext';
@@ -10,7 +9,7 @@ function AnalysisView() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   
-  const [submission, setSubmission] = useState(null);
+  const [submission, setSubmission] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
@@ -18,44 +17,44 @@ function AnalysisView() {
   const [text, setText] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
   
-  useEffect(() => {
-    async function fetchSubmission() {
-      try {
-        const submissionRef = doc(db, 'submissions', id);
-        const submissionSnap = await getDoc(submissionRef);
-        
-        if (!submissionSnap.exists()) {
-          setError('Submission not found');
-          return;
-        }
-        
-        const submissionData = submissionSnap.data();
-        
-        // Check if this submission belongs to the current user
-        if (submissionData.userId !== currentUser.uid) {
-          setError('You do not have permission to view this submission');
-          return;
-        }
-        
-        const formattedSubmission = {
-          id: submissionSnap.id,
-          ...submissionData,
-          createdAt: submissionData.createdAt?.toDate() || new Date()
-        };
-        
-        setSubmission(formattedSubmission);
-        setTitle(formattedSubmission.title || 'Untitled Analysis');
-        setText(formattedSubmission.text || '');
-      } catch (error) {
-        console.error("Error fetching submission:", error);
-        setError('Failed to load submission data');
-      } finally {
-        setLoading(false);
+  const fetchSubmission = useCallback(async () => {
+    try {
+      const submissionRef = doc(db, 'submissions', id);
+      const submissionSnap = await getDoc(submissionRef);
+      
+      if (!submissionSnap.exists()) {
+        setError('Submission not found');
+        return;
       }
+      
+      const submissionData = submissionSnap.data();
+      
+      // Check if this submission belongs to the current user
+      if (submissionData.userId !== currentUser.uid) {
+        setError('You do not have permission to view this submission');
+        return;
+      }
+      
+      const formattedSubmission = {
+        id: submissionSnap.id,
+        ...submissionData,
+        createdAt: submissionData.createdAt?.toDate() || new Date()
+      };
+      
+      setSubmission(formattedSubmission);
+      setTitle(formattedSubmission.title || 'Untitled Analysis');
+      setText(formattedSubmission.text || '');
+    } catch (error) {
+      console.error("Error fetching submission:", error);
+      setError('Failed to load submission data');
+    } finally {
+      setLoading(false);
     }
-    
-    fetchSubmission();
   }, [id, currentUser]);
+
+  useEffect(() => {
+    fetchSubmission();
+  }, [fetchSubmission]);
   
   const handleReanalyze = async () => {
     if (text.trim().length < 100) {
@@ -67,8 +66,7 @@ function AnalysisView() {
       setAnalyzing(true);
       setError('');
       
-     
-      // For this demo, we'll simulate an analysis
+      // Simulate an analysis process
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Example analysis results
@@ -265,22 +263,22 @@ function AnalysisView() {
                 <div
                   style={{ width: `${submission.aiInfluence}%` }}
                   className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
-                    submission.aiInfluence > 50 
-                      ? 'bg-red-500' 
-                      : submission.aiInfluence > 20 
-                        ? 'bg-yellow-500'
-                        : 'bg-green-500'
+                    submission.aiInfluence > 50
+                      ? 'bg-red-500'
+                      : submission.aiInfluence > 20
+                      ? 'bg-yellow-500'
+                      : 'bg-green-500'
                   }`}
                 ></div>
               </div>
               <p className="font-bold text-lg">
-                {submission.aiInfluence}%
+                {submission.aiInfluence}% 
                 <span className="ml-2 text-sm font-normal text-gray-500">
-                  {submission.aiInfluence > 50 
-                    ? 'High AI influence' 
-                    : submission.aiInfluence > 20 
-                      ? 'Moderate AI influence'
-                      : 'Low AI influence'}
+                  {submission.aiInfluence > 50
+                    ? 'High AI influence'
+                    : submission.aiInfluence > 20
+                    ? 'Moderate AI influence'
+                    : 'Low AI influence'}
                 </span>
               </p>
             </div>
@@ -295,8 +293,12 @@ function AnalysisView() {
             <p className="text-sm text-gray-500 mb-1">Readability</p>
             <p className="font-bold text-2xl text-green-600">{submission.readabilityScore}/100</p>
             <p className="text-sm text-gray-500">
-              {submission.readabilityScore > 80 ? 'Advanced' : 
-               submission.readabilityScore > 60 ? 'Intermediate' : 'Basic'} level
+              {submission.readabilityScore > 80
+                ? 'Advanced'
+                : submission.readabilityScore > 60
+                ? 'Intermediate'
+                : 'Basic'}{' '}
+              level
             </p>
           </div>
         </div>
@@ -307,7 +309,7 @@ function AnalysisView() {
               <i className="fas fa-exclamation-circle text-yellow-500 mr-2"></i> Improvement Suggestions
             </h3>
             <ul className="space-y-2">
-              {submission.suggestions.map((suggestion, index) => (
+              {submission.suggestions?.map((suggestion, index) => (
                 <li key={index} className="flex">
                   <i className="fas fa-angle-right text-yellow-500 mt-1 mr-2"></i>
                   <span>{suggestion}</span>
@@ -321,7 +323,7 @@ function AnalysisView() {
               <i className="fas fa-check-circle text-green-500 mr-2"></i> Writing Strengths
             </h3>
             <ul className="space-y-2">
-              {submission.strengths.map((strength, index) => (
+              {submission.strengths?.map((strength, index) => (
                 <li key={index} className="flex">
                   <i className="fas fa-check text-green-500 mt-1 mr-2"></i>
                   <span>{strength}</span>

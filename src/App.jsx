@@ -1,4 +1,3 @@
-// File: src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -16,7 +15,7 @@ import AdminReports from './pages/admin/AdminReports';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Help from './pages/Help';
-import AnalysisView from './pages/AnalysisView';
+import AnalysisView from './pages/AnalysisView';  // Ensure this is imported
 import Subscription from './pages/Subscription';
 
 // Protected route component
@@ -77,14 +76,17 @@ function AppContent() {
             </ProtectedRoute>
           } 
         />
+        
+        {/* Update route here */}
         <Route 
-          path="/analysis/:id" 
+          path="/analysis/:id"  // Correct route for viewing individual submissions
           element={
             <ProtectedRoute>
               <AnalysisView />
             </ProtectedRoute>
           } 
         />
+
         <Route 
           path="/progress" 
           element={
@@ -141,15 +143,14 @@ function AppContent() {
             </AdminRoute>
           } 
         />
-      <Route 
-        path="/subscription" 
-        element={
-          <ProtectedRoute>
-            <Subscription />
-          </ProtectedRoute>
-        } 
-      />
-
+        <Route 
+          path="/subscription" 
+          element={
+            <ProtectedRoute>
+              <Subscription />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Layout>
   );

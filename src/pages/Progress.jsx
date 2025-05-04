@@ -30,7 +30,7 @@ function Progress() {
         const submissionsList = [];
         querySnapshot.forEach((doc) => {
           const submission = {
-            id: doc.id,
+            id: doc.id, // Firestore-generated document ID
             ...doc.data(),
             createdAt: doc.data().createdAt?.toDate() || new Date(),
             updatedAt: doc.data().updatedAt?.toDate() || null,
@@ -87,8 +87,9 @@ function Progress() {
 
   const { avgScore, avgAiInfluence } = getAverageScores();
 
-  const handleViewSubmission = (submissionId) => {
-    navigate(`/analysis/${submissionId}`);
+  const handleViewSubmission = (submissionsId) => {
+    console.log("Navigating to submission with ID:", submissionsId); // For debugging
+    navigate(`/analysis/${submissionsId}`); // Navigate to the correct route for viewing/editing the submission
   };
 
   const handleSort = (column) => {

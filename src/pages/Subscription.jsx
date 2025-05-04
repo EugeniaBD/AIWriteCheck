@@ -1,32 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { FiCheckCircle } from "react-icons/fi";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../contexts/AuthContext";
 import { useAuth } from "../contexts/AuthContext";
-
-// Export token logic for reuse
-export const getMonthlyTokenUsage = async (uid) => {
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const snapshot = await getDocs(
-    query(collection(db, "submissions"), where("userId", "==", uid))
-  );
-
-  const thisMonthDocs = snapshot.docs.filter((doc) => {
-    const createdAt = doc.data().createdAt?.toDate?.();
-    return createdAt && createdAt >= firstDayOfMonth;
-  });
-
-  return thisMonthDocs.length;
-};
+import { getTokenUsage } from "../utils/tokenUtils"; // Import token calculation
 
 function Subscription() {
   const { currentUser } = useAuth();
+  const [tokensLeft, setTokensLeft] = useState(null);
   const [analysisCount, setAnalysisCount] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState("Standard");
   const [confirmation, setConfirmation] = useState("");
-  const [tokensLeft, setTokensLeft] = useState(null);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchTokenData = async () => {
+      const { canSubmit, tokensLeft, plan, used } = await getTokenUsage(currentUser.uid);
+      setTokensLeft(tokensLeft);
+      setAnalysisCount(used);
+      setSelectedPlan(plan);
+    };
+
+    fetchTokenData();
+  }, [currentUser]);
 
   const plans = [
     {
@@ -61,32 +56,9 @@ function Subscription() {
     },
   ];
 
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const fetchAnalysisCount = async () => {
-      try {
-        const count = await getMonthlyTokenUsage(currentUser.uid);
-        setAnalysisCount(count);
-
-        const matched = plans.find((p) => count >= p.range[0] && count <= p.range[1]);
-        if (matched) {
-          setSelectedPlan(matched.name);
-          setTokensLeft(
-            matched.maxTokens === Infinity ? "Unlimited" : Math.max(matched.maxTokens - count, 0)
-          );
-        }
-      } catch (err) {
-        console.error("Failed to fetch analysis count:", err);
-      }
-    };
-
-    fetchAnalysisCount();
-  }, [currentUser]);
-
   const handleSelectPlan = (planName) => {
-    const matched = plans.find((p) => p.name === planName);
     setSelectedPlan(planName);
+    const matched = plans.find((p) => p.name === planName);
     setTokensLeft(
       matched.maxTokens === Infinity ? "Unlimited" : Math.max(matched.maxTokens - analysisCount, 0)
     );

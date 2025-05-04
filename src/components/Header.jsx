@@ -74,7 +74,7 @@ function Header() {
                       "/analysis"
                     )} px-3 py-2 rounded-md text-sm font-medium flex items-center`}
                   >
-                    <FiFileText className="mr-1" /> Text Analysisss
+                    <FiFileText className="mr-1" /> Text Analysis
                   </Link>
                   <Link
                     to="/progress"

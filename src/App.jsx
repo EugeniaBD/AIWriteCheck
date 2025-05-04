@@ -17,6 +17,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import Help from './pages/Help';
 import AnalysisView from './pages/AnalysisView';
+import Subscription from './pages/Subscription';
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
@@ -140,6 +141,15 @@ function AppContent() {
             </AdminRoute>
           } 
         />
+      <Route 
+        path="/subscription" 
+        element={
+          <ProtectedRoute>
+            <Subscription />
+          </ProtectedRoute>
+        } 
+      />
+
       </Routes>
     </Layout>
   );

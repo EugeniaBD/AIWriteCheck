@@ -348,7 +348,7 @@ function AnalysisView() {
         </button>
         
         <button
-          onClick={() => navigate('/text-analysis')}
+          onClick={() => navigate('/analysis')}
           className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
         >
           <i className="fas fa-plus mr-2"></i> New Analysis

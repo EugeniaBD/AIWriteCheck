@@ -4,6 +4,23 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../contexts/AuthContext";
 import { useAuth } from "../contexts/AuthContext";
 
+// Export token logic for reuse
+export const getMonthlyTokenUsage = async (uid) => {
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const snapshot = await getDocs(
+    query(collection(db, "submissions"), where("userId", "==", uid))
+  );
+
+  const thisMonthDocs = snapshot.docs.filter((doc) => {
+    const createdAt = doc.data().createdAt?.toDate?.();
+    return createdAt && createdAt >= firstDayOfMonth;
+  });
+
+  return thisMonthDocs.length;
+};
+
 function Subscription() {
   const { currentUser } = useAuth();
   const [analysisCount, setAnalysisCount] = useState(0);
@@ -49,22 +66,7 @@ function Subscription() {
 
     const fetchAnalysisCount = async () => {
       try {
-        const now = new Date();
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-        const snapshot = await getDocs(
-          query(collection(db, "submissions"), where("userId", "==", currentUser.uid))
-        );
-
-        const thisMonthDocs = snapshot.docs.filter((doc) => {
-          const createdAt = doc.data().createdAt?.toDate?.();
-          return createdAt && createdAt >= firstDayOfMonth;
-        });
-
-        const count = thisMonthDocs.length;
-
-        console.log("Filtered submissions this month:", thisMonthDocs.map(doc => ({ id: doc.id, createdAt: doc.data().createdAt?.toDate?.() })));
-
+        const count = await getMonthlyTokenUsage(currentUser.uid);
         setAnalysisCount(count);
 
         const matched = plans.find((p) => count >= p.range[0] && count <= p.range[1]);
@@ -83,8 +85,8 @@ function Subscription() {
   }, [currentUser]);
 
   const handleSelectPlan = (planName) => {
-    setSelectedPlan(planName);
     const matched = plans.find((p) => p.name === planName);
+    setSelectedPlan(planName);
     setTokensLeft(
       matched.maxTokens === Infinity ? "Unlimited" : Math.max(matched.maxTokens - analysisCount, 0)
     );

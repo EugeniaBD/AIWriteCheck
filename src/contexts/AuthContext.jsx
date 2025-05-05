@@ -10,7 +10,9 @@ import {
   updateEmail,
   updatePassword,
   reauthenticateWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
+  signInWithPopup,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, getFirestore } from 'firebase/firestore';
 import firebaseApp from '../firebase/config'; // Import with a different name to avoid confusion
@@ -31,6 +33,36 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
 
+  // Google Sign-In Method
+  async function signInWithGoogle() {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if the user already exists in Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        // If the user doesn't exist, create a new document
+        await setDoc(userDocRef, {
+          name: user.displayName,
+          email: user.email,
+          role: 'user', // Default role for new users
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      // Return the user data
+      return result;
+    } catch (error) {
+      console.error("Error during Google sign-in:", error);
+      throw error;
+    }
+  }
+
+  // Sign up with email and password
   async function signup(email, password, name) {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -193,6 +225,7 @@ export function AuthProvider({ children }) {
     currentUser,
     userProfile,
     isAdmin: userRole === 'admin',
+    signInWithGoogle, // Add Google Sign-In function to the context
     signup,
     login,
     logout,
@@ -211,4 +244,4 @@ export function AuthProvider({ children }) {
 
 // Export db and auth for use in other components
 export { db, auth };
-// Don't re-export app from here
+

@@ -1,5 +1,3 @@
-
-// File: src/pages/Login.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,7 +7,7 @@ function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, signInWithGoogle } = useAuth();  // Add signInWithGoogle from context
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -25,6 +23,17 @@ function Login() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Google Sign-In Handler
+  async function handleGoogleSignIn() {
+    try {
+      await signInWithGoogle();  // Authenticate with Google
+      navigate('/dashboard');  // Redirect to Dashboard after successful Google sign-in
+    } catch (error) {
+      setError('Failed to sign in with Google');
+      console.error(error);
     }
   }
 
@@ -109,6 +118,17 @@ function Login() {
             )}
           </button>
         </form>
+
+        {/* Google Sign In Button with Image */}
+        <div className="mt-4 text-center">
+          <button
+            onClick={handleGoogleSignIn}
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-gray-800 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            <img src="/images/google.jpeg" alt="Google" className="inline-block w-6 h-6 mr-2" />
+            Sign in with Google
+          </button>
+        </div>
         
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
@@ -124,4 +144,3 @@ function Login() {
 }
 
 export default Login;
-

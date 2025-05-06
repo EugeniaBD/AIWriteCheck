@@ -15,6 +15,7 @@ import {
   GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, getFirestore } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Import Firebase Storage methods
 import firebaseApp from '../firebase/config'; // Import with a different name to avoid confusion
 
 // Initialize auth and db using the imported app
@@ -32,6 +33,18 @@ export function AuthProvider({ children }) {
   const [userRole, setUserRole] = useState('user');
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
+
+  const storage = getStorage();
+
+  // Helper function to upload image and get URL
+  const uploadProfileImage = async (file, userId) => {
+    const imageRef = ref(storage, `profileImages/${userId}/${file.name}`); // Store images under a unique user ID
+
+    await uploadBytes(imageRef, file); // Upload the file to Firebase Storage
+
+    const imageUrl = await getDownloadURL(imageRef); // Get the download URL of the uploaded image
+    return imageUrl;
+  };
 
   // Google Sign-In Method
   async function signInWithGoogle() {
@@ -126,23 +139,17 @@ export function AuthProvider({ children }) {
 
   async function updateUserProfile(data) {
     if (!currentUser) return;
-    
+
     try {
+      // Update the profile image (and other data if needed) in Firestore
       await updateDoc(doc(db, 'users', currentUser.uid), {
-        ...data,
-        updatedAt: new Date().toISOString()
+        ...data, // This will include the new profileImage URL
+        updatedAt: new Date().toISOString()  // Optionally, add a timestamp
       });
-      
-      // Update local user profile
-      setUserProfile(prev => ({...prev, ...data}));
-      
-      // Update display name if provided
-      if (data.name) {
-        await updateProfile(currentUser, {
-          displayName: data.name
-        });
-      }
-      
+
+      // Update local user profile state
+      setUserProfile(prev => ({ ...prev, ...data }));
+
       return true;
     } catch (error) {
       console.error("Error updating user profile:", error);
@@ -152,26 +159,26 @@ export function AuthProvider({ children }) {
 
   async function updateUserEmail(newEmail, password) {
     if (!currentUser) throw new Error("No user logged in");
-    
+
     try {
       // Re-authenticate user before updating email
       const credential = EmailAuthProvider.credential(
         currentUser.email,
         password
       );
-      
+
       await reauthenticateWithCredential(currentUser, credential);
       await updateEmail(currentUser, newEmail);
-      
+
       // Update email in Firestore
       await updateDoc(doc(db, 'users', currentUser.uid), {
         email: newEmail,
         updatedAt: new Date().toISOString()
       });
-      
+
       // Update local user profile
-      setUserProfile(prev => ({...prev, email: newEmail}));
-      
+      setUserProfile(prev => ({ ...prev, email: newEmail }));
+
       return true;
     } catch (error) {
       console.error("Error updating email:", error);
@@ -181,17 +188,17 @@ export function AuthProvider({ children }) {
 
   async function updateUserPassword(currentPassword, newPassword) {
     if (!currentUser) throw new Error("No user logged in");
-    
+
     try {
       // Re-authenticate user before updating password
       const credential = EmailAuthProvider.credential(
         currentUser.email,
         currentPassword
       );
-      
+
       await reauthenticateWithCredential(currentUser, credential);
       await updatePassword(currentUser, newPassword);
-      
+
       return true;
     } catch (error) {
       console.error("Error updating password:", error);
@@ -202,11 +209,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
-      
+
       if (user) {
         const role = await getUserRole(user.uid);
         setUserRole(role);
-        
+
         // Fetch user profile data
         const profile = await getUserProfile(user.uid);
         setUserProfile(profile);
@@ -214,7 +221,7 @@ export function AuthProvider({ children }) {
         setUserRole('user');
         setUserProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -244,4 +251,3 @@ export function AuthProvider({ children }) {
 
 // Export db and auth for use in other components
 export { db, auth };
-

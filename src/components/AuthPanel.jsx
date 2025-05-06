@@ -9,6 +9,24 @@ function AuthPanel() {
   const { signInWithGoogle } = useAuth();  // We assume the Google sign-in method is available from AuthContext
   const navigate = useNavigate();
 
+
+  // This is used in AuthProvider (or wherever you handle the user authentication):
+async function updateUserProfileImage(file, userId) {
+    try {
+      const imageUrl = await uploadProfileImage(file, userId);
+      
+      // Store the image URL in Firestore
+      await setDoc(doc(db, 'users', userId), {
+        profileImage: imageUrl, // Add the profileImage URL to the user's document
+      }, { merge: true });
+  
+      return imageUrl;
+    } catch (error) {
+      console.error("Error uploading profile image:", error);
+      throw error;
+    }
+  }
+
   async function handleGoogleSignIn() {
     try {
       // Sign in with Google using the method from the context

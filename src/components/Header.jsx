@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // Import Link
 import { useAuth } from "../contexts/AuthContext";
 import {
   FiMenu,
@@ -7,27 +7,28 @@ import {
   FiHome,
   FiFileText,
   FiTrendingUp,
-  FiSettings,
   FiHelpCircle,
-  FiShield,
   FiLogOut,
   FiUser,
   FiChevronRight,
   FiCamera,
 } from "react-icons/fi";
+import { uploadProfileImage } from "../utils/firebaseUtils"; // Import helper function for uploading images
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
-  const { currentUser, logout, isAdmin } = useAuth();
+  const { currentUser, logout, isAdmin, updateUserProfile } = useAuth(); // Use updateUserProfile to update profile data in Firestore
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Load the stored profile image from Firestore when the component mounts
   useEffect(() => {
-    const storedImage = localStorage.getItem("profileImage");
-    if (storedImage) setProfileImage(storedImage);
-  }, []);
+    if (currentUser && currentUser.profileImage) {
+      setProfileImage(currentUser.profileImage); // Set the profile image URL if it exists
+    }
+  }, [currentUser]);
 
   const handleLogout = async () => {
     try {
@@ -38,15 +39,23 @@ function Header() {
     }
   };
 
-  const handleImageUpload = (e) => {
+  // Handle profile image upload and update the profile
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
+
     if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-        localStorage.setItem("profileImage", reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Upload image to Firebase Storage and get its URL
+        const imageUrl = await uploadProfileImage(file, currentUser.uid);
+
+        // Update profile with the new image URL
+        setProfileImage(imageUrl);
+
+        // Update the user's profile in Firestore with the new image URL
+        await updateUserProfile({ profileImage: imageUrl });
+      } catch (error) {
+        console.error("Error uploading profile image", error);
+      }
     }
   };
 
@@ -185,14 +194,6 @@ function Header() {
             <p className="text-md font-semibold mt-2">{currentUser?.displayName || "Unnamed"}</p>
             <p className="text-sm text-gray-500">{currentUser?.email}</p>
           </div>
-
-          {/* Details */}
-          {/* <div className="space-y-2">
-            <p className="text-sm text-gray-500">User Type</p>
-            <p className="text-md font-medium text-gray-800">
-              {isAdmin ? "Admin" : "User"}
-            </p>
-          </div> */}
 
           <Link to="/settings" onClick={() => setIsAccountPanelOpen(false)} className="flex items-center justify-between px-4 py-2 border rounded-md text-blue-600 hover:bg-blue-50">
             <span>Settings</span> <FiChevronRight />
